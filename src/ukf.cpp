@@ -21,7 +21,7 @@ UKF::UKF() {
   x_ = VectorXd(5);
 
   // initial covariance matrix
-  P_ = MatrixXd(5, 5);
+  P_ = MatrixXd::Identity(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
@@ -51,6 +51,15 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
+
+  // State dimension
+  n_x_ = 5;
+
+  // Augmented state dimension
+  n_aug_ = 7;
+
+  // Sigma point spreading paremeter
+  lambda_ = 0.2;
 }
 
 UKF::~UKF() {}
@@ -66,6 +75,29 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+  if (!is_initialized_) {
+    if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+      float px = meas_package.raw_measurements_[0];
+      float py = meas_package.raw_measurements_[1];
+      x_ << px, py, 0, 0, 0;
+    } else if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      float ro = meas_package.raw_measurements_[0];
+      float theta = meas_package.raw_measurements_[1];
+      float ro_dot = meas_package.raw_measurements_[2];
+
+      float px = ro * cos(theta);
+      float py = ro * sin(theta);
+      float vx = ro_dot * cos(theta);
+      float vy = ro_dot * sin(theta);
+      float v = sqrt(vx*vx + vy*vy);
+      x_ << px, py, v, theta, 0;
+    }
+    is_initialized_ = true;
+    time_us_ = meas_package.timestamp_;
+    return;
+  }
+  
+
 }
 
 /**
