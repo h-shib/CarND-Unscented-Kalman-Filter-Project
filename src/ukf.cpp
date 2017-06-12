@@ -378,7 +378,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     }
 
     float ro = sqrt(c);
-    float theta = atan(py/px);
+    float theta = atan2(py, px);
     float ro_dot = (px*cos(yaw)*v + py*sin(yaw)*v) / ro;
 
     Zsig(0, i) = ro;
