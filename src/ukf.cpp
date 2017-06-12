@@ -234,6 +234,60 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
+  // set measurement dimension
+  int n_z = 2;
+
+  // matrix for sigma points in measurement space
+  MatrixXd Zsig = MatrixXd(n_z, 2*n_aug_+1);
+
+  // mean prediction
+  VectorXd z_pred = VectorXd(n_z);
+
+  // measurement covariance matrix
+  MatrixXd S = MatrixXd(n_z, n_z);
+
+  // measurement
+  VectorXd z;
+  z << meas_package.raw_measurements_[0],
+       meas_package.raw_measurements_[1];
+
+  for (int i = 0; i < 2* n_aug_+1; i++) {
+    float px   = Xsig_pred_(0, i);
+    float py   = Xsig_pred_(1, i);
+
+    Zsig(0, i) = px;
+    Zsig(1, i) = py;
+  }
+
+  // calculate mean
+  z_pred.fill(0.0);
+  for (int i = 0; i < 2*n_aug_+1; i++) {
+    z_pred = z_pred + weights_[i] * Zsig.col(i);
+  }
+
+  // calculate measurement covariance
+  S.fill(0.0);
+  for (int i = 0; i < 2*n_aug_+1; i++) {
+    S += weights_[i] * (Zsig.col(i) - z_pred) * (Zsig.col(i) - z_pred).transpose();
+  }
+  MatrixXd R = MatrixXd(n_z, n_z);
+  R << std_laspx_*std_laspx_, 0,
+       0, std_laspy_*std_laspy_;
+  S += R;
+
+  // cross correlation matrix
+  MatrixXd Tc = MatrixXd(n_x_, n_z);
+
+  Tc.fill(0.0);
+  for (int i = 0; i < 2*n_aug_+1; i++) {
+    Tc += weights_[i] * (Xsig_pred_.col(i) - x_) * (Zsig.col(i) - z_pred).transpose();
+  }
+
+  MatrixXd K = MatrixXd(n_x_, n_z);
+  K = Tc * S.inverse();
+
+  x_ += K * (z - z_pred);
+  P_ += -K * S * K.transpose();
 }
 
 /**
