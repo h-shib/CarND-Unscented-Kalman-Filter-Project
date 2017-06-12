@@ -106,6 +106,13 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
   Prediction(delta_t);
 
+  // update state and state covariance matrix
+  if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+    UpdateLidar(meas_package);
+  } else if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+    UpdateRadar(meas_package);
+  }
+
 }
 
 /**
@@ -212,9 +219,6 @@ void UKF::Prediction(double delta_t) {
   for (int i = 0; i < 2*n_aug_+1; i++) {
     P_ += weights[i] * (Xsig_pred_.col(i) - x_) * (Xsig_pred_.col(i) - x_).transpose();
   }
-
-
-
 }
 
 /**
