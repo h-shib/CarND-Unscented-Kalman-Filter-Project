@@ -186,8 +186,31 @@ void UKF::Prediction(double delta_t) {
     Xsig_pred_(2, i) = v_p;
     Xsig_pred_(3, i) = yaw_p;
     Xsig_pred_(4, i) = yawd_p;
+  }
 
+  /**
+  * predict mean and covariance
+  */
+  // set weights
+  VectorXd weights = VectorXd(2*n_aug_+1);
+  for (int i = 0; i < 2*n_aug_+1; i++) {
+    if (i == 0) {
+      weights[i] = lambda_ / (lambda_ + n_aug_);
+    } else {
+      weights[i] = 0.5 / (lambda_ + n_aug_);
+    }
+  }
 
+  // predict state mean
+  x_.fill(0.0);
+  for (int i = 0; i < 2*n_aug_+1; i++) {
+    x_ += weights[i] * Xsig_pred_.col(i);
+  }
+
+  // predict state covariance matrix
+  P_.fill(0.0);
+  for (int i = 0; i < 2*n_aug_+1; i++) {
+    P_ += weights[i] * (Xsig_pred_.col(i) - x_) * (Xsig_pred_.col(i) - x_).transpose();
   }
 
 
